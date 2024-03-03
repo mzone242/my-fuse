@@ -188,7 +188,7 @@ func_exec_program ()
 
   if test -f "$progdir/$program"; then
     # Add our own library path to LD_LIBRARY_PATH
-    LD_LIBRARY_PATH="/home/mzone/CS380L/lab2/fuse-2.9.9/lib/.libs:$LD_LIBRARY_PATH"
+    LD_LIBRARY_PATH="/home/mzone/CS380L/lab2/my-fuse/lib/.libs:$LD_LIBRARY_PATH"
 
     # Some systems cannot cope with colon-terminated LD_LIBRARY_PATH
     # The second colon is a workaround for a bug in BeOS R4 sed
