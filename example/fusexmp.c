@@ -29,46 +29,55 @@
 #include <dirent.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <stdlib.h>
+#include <time.h>
 
 
-char *rootdir = "/tmp/testing/";
-char *rootdir_server = "matthewh@pegasus.cs.utexas.edu:/tmp/matthewh/";
+const char *rootdir = "/tmp/testing/";
+const char *rootdir_server = "matthewh@pegasus.cs.utexas.edu:/tmp/matthewh/";
 
 #define PATH_MAX        4096
 
 static void myfs_fullpath(char fpath[PATH_MAX], const char *path)
 {
     strcpy(fpath, rootdir);
-    strncat(fpath, path, PATH_MAX); // ridiculously long paths will
+    memcpy(fpath, path, PATH_MAX); // ridiculously long paths will
 				    // break here
+	fpath[PATH_MAX - 1] = '\0';
 }
 
 static void myfs_fullpath_server(char fpath[PATH_MAX], const char *path)
 {
     strcpy(fpath, rootdir_server);
-    strncat(fpath, path, PATH_MAX); // ridiculously long paths will
+    memcpy(fpath, path, PATH_MAX); // ridiculously long paths will
 				    // break here
+	fpath[PATH_MAX - 1] = '\0';
 }
 
 static int xmp_getattr(const char *path, struct stat *stbuf)
 {
-	int res, status;
+	int res, err;
     char fpath[PATH_MAX];
 	char spath[PATH_MAX];
+	char scp[PATH_MAX*3];
 
     myfs_fullpath(fpath, path);
     myfs_fullpath_server(spath, path);
 
 	if (access(fpath, F_OK) != 0) {
-		pid_t p = fork();
-		if(p < 0) {
-			perror("fork fail");
-			exit(1);
-		} else if (p == 0) {
-			execl("/usr/bin/scp", "scp", "-i", "~/.ssh/id_rsa.pub", spath, fpath, (char *)0);
-		} else {
-			wait(&status);
-		}
+		snprintf(scp, PATH_MAX*3, "scp -i ~/.ssh/id_rsa.pub -p %s %s", spath, fpath);
+		err = system(scp);
+		if (err == -1)
+			return -errno;
+		// pid_t p = fork();
+		// if(p < 0) {
+		// 	perror("fork fail");
+		// 	return -errno;
+		// } else if (p == 0) {
+		// 	execl("/usr/bin/scp", "scp", "-i", "~/.ssh/id_rsa.pub", spath, fpath, (char *)0);
+		// } else {
+		// 	wait(&status);
+		// }
 	}
 
 
@@ -265,73 +274,78 @@ static int xmp_truncate(const char *path, off_t size)
 
 static int xmp_open(const char *path, struct fuse_file_info *fi)
 {
-	int res, status;
+	int res, err;
     char fpath[PATH_MAX];
 	char spath[PATH_MAX];
+    char scp[PATH_MAX*3];
 
     myfs_fullpath(fpath, path);
     myfs_fullpath_server(spath, path);
 
 
-    pid_t p = fork();
-    if(p < 0) {
-        perror("fork fail");
-        exit(1);
-    } else if (p == 0) {
-	    execl("/usr/bin/scp", "scp", "-i", "~/.ssh/id_rsa.pub", spath, fpath, (char *)0);
-    } else {
-        wait(&status);
-    }
+    // pid_t p = fork();
+    // if(p < 0) {
+    //     perror("fork fail");
+    //     exit(1);
+    // } else if (p == 0) {
+	//     execl("/usr/bin/scp", "scp", "-i", "~/.ssh/id_rsa.pub", spath, fpath, (char *)0);
+    // } else {
+    //     wait(&status);
+    // }
+    snprintf(scp, PATH_MAX*3, "scp -i ~/.ssh/id_rsa.pub -p %s %s", spath, fpath);
+    err = system(scp);
+	if (err == -1)
+		return -errno;
 
 	res = open(fpath, fi->flags);
 	if (res == -1)
 		return -errno;
-
-	close(res);
+	fi->fh = res;
+	// close(res);
 	return 0;
 }
 
 static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
 		    struct fuse_file_info *fi)
 {
-	int fd;
+	// int fd;
 	int res;
     char fpath[PATH_MAX];
 
     myfs_fullpath(fpath, path);
 
-	(void) fi;
-	fd = open(fpath, O_RDONLY);
-	if (fd == -1)
-		return -errno;
+	// (void) fi;
+	// fd = open(fpath, O_RDONLY);
+	// if (fd == -1)
+	// 	return -errno;
 
-	res = pread(fd, buf, size, offset);
+	res = pread(fi->fh, buf, size, offset);
 	if (res == -1)
 		res = -errno;
 
-	close(fd);
+	// close(fd);
 	return res;
 }
 
 static int xmp_write(const char *path, const char *buf, size_t size,
 		     off_t offset, struct fuse_file_info *fi)
 {
-	int fd;
+	// int fd;
 	int res;
     char fpath[PATH_MAX];
 
     myfs_fullpath(fpath, path);
 
-	(void) fi;
-	fd = open(fpath, O_WRONLY);
-	if (fd == -1)
-		return -errno;
+	// (void) fi;
+	// fd = open(fpath, O_WRONLY);
+	// if (fd == -1)
+	// 	return -errno;
 
-	res = pwrite(fd, buf, size, offset);
+	res = pwrite(fi->fh, buf, size, offset);
 	if (res == -1)
 		res = -errno;
 
-	close(fd);
+	// close(fd);
 	return res;
 }
 
@@ -346,43 +360,78 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 // 	return 0;
 // }
 
-static int xmp_release(const char *path, struct fuse_file_info *fi)
-{
-	/* Just a stub.	 This method is optional and can safely be left
-	   unimplemented */
-    
-	int status;
-    char fpath[PATH_MAX];
-	char spath[PATH_MAX];
-
-    myfs_fullpath(fpath, path);
-    myfs_fullpath_server(spath, path);
-
-
-    pid_t p = fork();
-    if(p < 0) {
-        perror("fork fail");
-        exit(1);
-    } else if (p == 0) {
-	    execl("/usr/bin/scp", "scp", "-i", "~/.ssh/id_rsa.pub", fpath, spath, (char *)0);
-    } else {
-        wait(&status);
-    }
-
-	(void) path;
-	(void) fi;
-	return 0;
-}
-
 static int xmp_fsync(const char *path, int isdatasync,
 		     struct fuse_file_info *fi)
 {
 	/* Just a stub.	 This method is optional and can safely be left
 	   unimplemented */
-
-	(void) path;
 	(void) isdatasync;
 	(void) fi;
+
+	int err;
+    char fpath[PATH_MAX];
+	char spath[PATH_MAX];
+    char scp[PATH_MAX*3];
+
+    myfs_fullpath(fpath, path);
+    myfs_fullpath_server(spath, path);
+
+
+    // pid_t p = fork();
+    // if(p < 0) {
+    //     perror("fork fail");
+    //     exit(1);
+    // } else if (p == 0) {
+	//     execl("/usr/bin/scp", "scp", "-i", "~/.ssh/id_rsa.pub", fpath, spath, (char *)0);
+    // } else {
+    //     wait(&status);
+    // }
+    snprintf(scp, PATH_MAX*3, "scp -i ~/.ssh/id_rsa.pub -p %s %s", fpath, spath);
+    err = system(scp);
+	if (err == -1)
+		return -errno;
+
+	// (void) path;
+	return 0;
+}
+
+static int xmp_release(const char *path, struct fuse_file_info *fi)
+{
+	/* Just a stub.	 This method is optional and can safely be left
+	   unimplemented */
+    int err, res;
+	// int err, res;
+    // char fpath[PATH_MAX];
+	// char spath[PATH_MAX];
+    // char scp[PATH_MAX*3];
+
+    // myfs_fullpath(fpath, path);
+    // myfs_fullpath_server(spath, path);
+
+
+    // // pid_t p = fork();
+    // // if(p < 0) {
+    // //     perror("fork fail");
+    // //     exit(1);
+    // // } else if (p == 0) {
+	// //     execl("/usr/bin/scp", "scp", "-i", "~/.ssh/id_rsa.pub", fpath, spath, (char *)0);
+    // // } else {
+    // //     wait(&status);
+    // // }
+    // snprintf(scp, PATH_MAX*3, "scp -i ~/.ssh/id_rsa.pub -p %s %s", fpath, spath);
+    // err = system(scp);
+	// if (err == -1)
+	// 	return -errno;
+	err = xmp_fsync(path, 0, fi);
+	if (err == -1)
+		return -errno;
+	
+	res = close(fi->fh);
+	if (res == -1)
+		return -errno;
+
+	// (void) path;
+	// (void) fi;
 	return 0;
 }
 

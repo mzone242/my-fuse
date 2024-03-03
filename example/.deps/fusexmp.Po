@@ -77,7 +77,12 @@ fusexmp.o: fusexmp.c /usr/include/stdc-predef.h ../include/config.h \
  /usr/include/x86_64-linux-gnu/bits/select.h \
  /usr/include/x86_64-linux-gnu/bits/types/sigset_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/__sigset_t.h \
- /usr/include/x86_64-linux-gnu/bits/select2.h
+ /usr/include/x86_64-linux-gnu/bits/select2.h /usr/include/stdlib.h \
+ /usr/include/x86_64-linux-gnu/bits/waitflags.h \
+ /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
+ /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h \
+ /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
+ /usr/include/x86_64-linux-gnu/bits/stdlib.h
 /usr/include/stdc-predef.h:
 ../include/config.h:
 ../include/fuse.h:
@@ -173,3 +178,9 @@ fusexmp.o: fusexmp.c /usr/include/stdc-predef.h ../include/config.h \
 /usr/include/x86_64-linux-gnu/bits/types/sigset_t.h:
 /usr/include/x86_64-linux-gnu/bits/types/__sigset_t.h:
 /usr/include/x86_64-linux-gnu/bits/select2.h:
+/usr/include/stdlib.h:
+/usr/include/x86_64-linux-gnu/bits/waitflags.h:
+/usr/include/x86_64-linux-gnu/bits/waitstatus.h:
+/usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h:
+/usr/include/x86_64-linux-gnu/bits/stdlib-float.h:
+/usr/include/x86_64-linux-gnu/bits/stdlib.h:
