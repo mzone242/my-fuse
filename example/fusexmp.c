@@ -33,7 +33,7 @@
 #include <time.h>
 
 
-const char *rootdir = "/tmp/testing/";
+const char *rootdir = "/tmp/matthewh/";
 const char *rootdir_server = "matthewh@pegasus.cs.utexas.edu:/tmp/matthewh/";
 
 #define PATH_MAX        4096
@@ -41,22 +41,21 @@ const char *rootdir_server = "matthewh@pegasus.cs.utexas.edu:/tmp/matthewh/";
 static void myfs_fullpath(char fpath[PATH_MAX], const char *path)
 {
     strcpy(fpath, rootdir);
-    memcpy(fpath, path, PATH_MAX); // ridiculously long paths will
+    strncat(fpath, path, PATH_MAX - strlen(fpath) - 1); // ridiculously long paths will
 				    // break here
-	fpath[PATH_MAX - 1] = '\0';
 }
 
 static void myfs_fullpath_server(char fpath[PATH_MAX], const char *path)
 {
     strcpy(fpath, rootdir_server);
-    memcpy(fpath, path, PATH_MAX); // ridiculously long paths will
+    strncat(fpath, path, PATH_MAX- strlen(fpath) - 1); // ridiculously long paths will
 				    // break here
-	fpath[PATH_MAX - 1] = '\0';
 }
 
 static int xmp_getattr(const char *path, struct stat *stbuf)
 {
 	int res, err;
+    int st_size, st_blocks, st_blksize, st_dev, st_ino, st_nlink, st_mode, st_uid, st_gid;
     char fpath[PATH_MAX];
 	char spath[PATH_MAX];
 	char scp[PATH_MAX*3];
@@ -64,26 +63,69 @@ static int xmp_getattr(const char *path, struct stat *stbuf)
     myfs_fullpath(fpath, path);
     myfs_fullpath_server(spath, path);
 
-	if (access(fpath, F_OK) != 0) {
-		snprintf(scp, PATH_MAX*3, "scp -i ~/.ssh/id_rsa.pub -p %s %s", spath, fpath);
-		err = system(scp);
-		if (err == -1)
+	memset(stbuf, 0, sizeof(struct stat));
+	if (strcmp(path, "/") == 0) {
+		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink = 2;
+	} else {
+		char p[1024];
+		snprintf(scp, PATH_MAX*2, "ssh -i ~/.ssh/id_rsa.pub matthewh@pegasus.cs.utexas.edu stat %s", fpath);
+		FILE *fp = popen(scp, "r");
+		if (fp == NULL)
 			return -errno;
-		// pid_t p = fork();
-		// if(p < 0) {
-		// 	perror("fork fail");
-		// 	return -errno;
-		// } else if (p == 0) {
-		// 	execl("/usr/bin/scp", "scp", "-i", "~/.ssh/id_rsa.pub", spath, fpath, (char *)0);
-		// } else {
-		// 	wait(&status);
-		// }
+
+		if (fgets(p, sizeof(p), fp) == NULL) {
+			pclose(fp);
+			return -errno;
+		}
+		if (fgets(p, sizeof(p), fp) == NULL) {
+			pclose(fp);
+			return -errno;
+		}
+		sscanf(p, "%*[^0123456789]%d%*[^0123456789]%d%*[^0123456789]%d", &st_size, &st_blocks, &st_blksize);
+		stbuf->st_size = st_size;
+		stbuf->st_blocks = st_blocks;
+		// stbuf->st_blksize = st_blksize;
+		if (fgets(p, sizeof(p), fp) == NULL) {
+			pclose(fp);
+			return -errno;
+		}
+		sscanf(p, "%*[^/]%*[^0123456789]%d%*[^0123456789]%d%*[^0123456789]%d", &st_dev, &st_ino, &st_nlink);
+		// stbuf->st_dev = st_dev;
+		// stbuf->st_ino = st_ino;
+		stbuf->st_nlink = st_nlink;
+		if (fgets(p, sizeof(p), fp) == NULL) {
+			pclose(fp);
+			return -errno;
+		}
+		sscanf(p, "%*[^0123456789]%o%*[^0123456789]%d%*[^0123456789]%d", &st_mode, &st_uid, &st_gid);
+		stbuf->st_mode = S_IFREG | st_mode;
+		stbuf->st_uid = st_uid;
+		stbuf->st_gid = st_gid;
+
+		pclose(fp);
 	}
 
+	// if (access(fpath, F_OK) != 0) {
+	// 	snprintf(scp, PATH_MAX*3, "scp -i ~/.ssh/id_rsa.pub -p %s %s", spath, fpath);
+	// 	err = system(scp);
+	// 	if (err == -1)
+	// 		return -errno;
+	// 	// pid_t p = fork();
+	// 	// if(p < 0) {
+	// 	// 	perror("fork fail");
+	// 	// 	return -errno;
+	// 	// } else if (p == 0) {
+	// 	// 	execl("/usr/bin/scp", "scp", "-i", "~/.ssh/id_rsa.pub", spath, fpath, (char *)0);
+	// 	// } else {
+	// 	// 	wait(&status);
+	// 	// }
+	// }
 
-	res = lstat(fpath, stbuf);
-	if (res == -1)
-		return -errno;
+
+	// res = lstat(fpath, stbuf);
+	// if (res == -1)
+	// 	return -errno;
 
 	return 0;
 }
@@ -365,8 +407,6 @@ static int xmp_fsync(const char *path, int isdatasync,
 {
 	/* Just a stub.	 This method is optional and can safely be left
 	   unimplemented */
-	(void) isdatasync;
-	(void) fi;
 
 	int err;
     char fpath[PATH_MAX];
@@ -392,6 +432,8 @@ static int xmp_fsync(const char *path, int isdatasync,
 		return -errno;
 
 	// (void) path;
+	(void) isdatasync;
+	(void) fi;
 	return 0;
 }
 
@@ -439,7 +481,7 @@ static struct fuse_operations xmp_oper = {
 	.getattr	= xmp_getattr,
 	// .access		= xmp_access,
 	// .readlink	= xmp_readlink,
-	.readdir	= xmp_readdir,
+	// .readdir	= xmp_readdir,
 	.mknod		= xmp_mknod,
 	// .mkdir		= xmp_mkdir,
 	// .symlink	= xmp_symlink,
