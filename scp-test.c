@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
+#include <stdlib.h>
+#include <time.h>
 
 
 char *rootdir = "/tmp/testing";
@@ -42,10 +44,24 @@ int main(int argc, char const *argv[])
     // } else {
     //     wait(&status);
     // }
+    int err = system("scp -i ~/.ssh/id_rsa.pub matthewh@pegasus.cs.utexas.edu:/tmp/matthewh/foo /tmp/testing");
+    // struct stat *buf;
 
-    struct stat *buf;
+    // int ret = stat("matthewh@pegasus.cs.utexas.edu:/tmp/matthewh/foo", buf);
 
-    int ret = stat("matthewh@pegasus.cs.utexas.edu:/tmp/matthewh/foo", buf);
+    // int err = system("/usr/bin/ssh", "ssh", "-i", "~/.ssh/id_rsa.pub", "matthewh@pegasus.cs.utexas.edu", "\'chmod 644 /tmp/testing/a\'", (char *)0);
+    // char p[1035];
+    // FILE *fp = popen("ssh -i ~/.ssh/id_rsa.pub matthewh@pegasus.cs.utexas.edu stat /tmp/matthewh/a", "r");
+    // if (fp == NULL) {
+    //     printf("Failed to run command\n");
+    //     exit(1);
+    // }
+
+    // while (fgets(p, sizeof(p), fp) != NULL) {
+    //     printf("%s", p);
+    // }
+
+    // pclose(fp);
 
 
     printf("all good!\n");
