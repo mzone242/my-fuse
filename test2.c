@@ -7,8 +7,27 @@
 
 int
 main() {
-    FILE *fp = NULL;
-    fclose(fopen("mountdir/foobar", "w"));
-    printf("Created file\n");
-    return 0;
+   int i;
+   for (i = 0; i < 50; i++) {
+      int fd0 = open("mountdir/foo", O_RDWR);
+      int fd1 = open("mountdir/foo", O_RDONLY);
+      char buf[100];
+      buf[0] = 9;
+      buf[1] = 81;
+      buf[2] = 'A';
+      buf[3] = 'q';
+      buf[4] = '0';
+      int nb0 = write(fd0, buf, 100);
+      int nb1;
+      close(fd0);
+      nb1 = read(fd1, buf, 100);
+      assert(buf[0] == 9);
+      assert(buf[1] == 81);
+      assert(buf[2] == 'A');
+      assert(buf[3] == 'q');
+      assert(buf[4] == '0');
+      close(fd1);
+   }
+   // printf("Wrote %d, then %d bytes\n", nb0, nb1);
+   return 0;
 }

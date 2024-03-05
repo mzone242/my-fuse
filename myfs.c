@@ -197,6 +197,7 @@ static int xmp_fsync(const char *path, int isdatasync,
 static int xmp_release(const char *path, struct fuse_file_info *fi)
 {
     int err, res;
+    char fpath[PATH_MAX];
 
 	err = xmp_fsync(path, 0, fi);
 	if (err == -1)
@@ -204,6 +205,11 @@ static int xmp_release(const char *path, struct fuse_file_info *fi)
 	
 	res = close(fi->fh);
 	if (res == -1)
+		return -errno;
+
+    myfs_fullpath(fpath, path);
+	err = remove(fpath);
+	if (err == -1)
 		return -errno;
 
 	return 0;
