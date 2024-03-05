@@ -7,8 +7,8 @@
 
 int
 main() {
-   int fd0 = open("mountdir/foo", O_RDWR);
-   int fd1 = open("mountdir/foo", O_RDONLY);
+   int fd0 = open("../mountdir/foo", O_RDWR);
+   int fd1 = open("../mountdir/foo", O_RDONLY);
    char buf[100];
    buf[0] = 9;
    buf[1] = 81;

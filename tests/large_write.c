@@ -7,7 +7,7 @@
 
 int
 main() {
-    int fd0 = open("mountdir/large", O_RDWR);
+    int fd0 = open("../mountdir/large", O_RDWR);
     char buf[4096];
     buf[4095] = 'a';
     int i;

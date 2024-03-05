@@ -11,7 +11,7 @@ int
 main() {
     FILE *fh;
     srand(time(NULL));
-    fh = fopen("mountdir/large", "r");
+    fh = fopen("../mountdir/large", "r");
     if (fh == NULL)
     {
         perror("Unable to read file\n");

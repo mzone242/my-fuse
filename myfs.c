@@ -184,7 +184,7 @@ static int xmp_fsync(const char *path, int isdatasync,
     myfs_fullpath_server(spath, path);
 
 
-    snprintf(scp, PATH_MAX*3, "scp -i ~/.ssh/id_rsa.pub -p %s %s", fpath, spath);
+    snprintf(scp, PATH_MAX*3, "scp -i ~/.ssh/id_rsa.pub %s %s", fpath, spath);
     err = system(scp);
 	if (err == -1)
 		return -errno;
