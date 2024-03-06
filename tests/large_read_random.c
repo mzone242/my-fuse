@@ -19,7 +19,7 @@ main() {
     }
     char buf[4096];
     int i;
-    for (i = 0; i < 1000; i++) {
+    for (i = 0; i < 25600; i++) {
         int r = rand() % 25000;
         fseek(fh, r*sizeof(buf), SEEK_SET);
         int nb0 = fread(buf, sizeof(buf), 1, fh);

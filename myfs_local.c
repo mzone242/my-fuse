@@ -34,7 +34,7 @@
 
 
 const char *rootdir = "/tmp/matthewh/";
-const char *rootdir_server = "pegasus.cs.utexas.edu:/tmp/matthewh/";
+const char *rootdir_server = "matthewh@pegasus.cs.utexas.edu:/tmp/matthewh/";
 
 #define PATH_MAX        4096
 
@@ -68,7 +68,7 @@ static int xmp_getattr(const char *path, struct stat *stbuf)
 		stbuf->st_nlink = 2;
 	} else {
 		char p[1024];
-		snprintf(scp, PATH_MAX*2, "ssh pegasus.cs.utexas.edu stat %s", fpath);
+		snprintf(scp, PATH_MAX*2, "ssh -i ~/.ssh/id_rsa.pub matthewh@pegasus.cs.utexas.edu stat %s", fpath);
 		FILE *fp = popen(scp, "r");
 		if (fp == NULL)
 			return -errno;
@@ -130,7 +130,7 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
     myfs_fullpath_server(spath, path);
 
 
-    snprintf(scp, PATH_MAX*3, "scp -p %s %s", spath, fpath);
+    snprintf(scp, PATH_MAX*3, "scp -i ~/.ssh/id_rsa.pub -p %s %s", spath, fpath);
     err = system(scp);
 	if (err == -1)
 		return -errno;
@@ -184,7 +184,7 @@ static int xmp_fsync(const char *path, int isdatasync,
     myfs_fullpath_server(spath, path);
 
 
-    snprintf(scp, PATH_MAX*3, "scp %s %s", fpath, spath);
+    snprintf(scp, PATH_MAX*3, "scp -i ~/.ssh/id_rsa.pub %s %s", fpath, spath);
     err = system(scp);
 	if (err == -1)
 		return -errno;
